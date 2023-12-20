@@ -4,13 +4,13 @@
   "author": "Michiel Piscaer",
   "license": "na",
   "summary": "dnsdist",
-  "source": "https://github.com/mpiscaer/puppet_dnsdist",
+  "source": "https://github.com/flepoutre/puppet_dnsdist",
 
   "dependencies": [
     { "name": "puppetlabs/concat", "version_requirement": ">=1.2.0" },
     { "name": "puppetlabs/apt", "version_requirement": ">=0.0.4" }
   ],
-  "project_page": "https://github.com/mpiscaer/puppet_dnsdist",
+  "project_page": "https://github.com/flepoutre/puppet_dnsdist",
   "operatingsystem_support": [
     {
       "operatingsystem": "Ubuntu",

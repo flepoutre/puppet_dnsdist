@@ -1,0 +1,6 @@
+newServer({address="<%= @forward_address %>", name="<%= @resolver_name  -%>"<%
+if @pool != ''
+  -%>, pool="<%= @pool -%>"<%
+end -%>
+})
+

@@ -9,8 +9,8 @@
 #   0.1   Initial release
 #
 # Parameters:
-#   $action
-#   $order
+#   @param action
+#   @param order
 # Requires:
 #
 # Sample Usage:
@@ -21,10 +21,14 @@
 #       order  => 1;
 #   }
 #
-define dnsdist::addaction ($action, $order) {
+define dnsdist::addaction (
+  Optional[String] $action = undef,
+  Optional[Integer] $order = undef,
+) {
   concat::fragment { "addAction-${order}-${title}":
     target  => '/etc/dnsdist/dnsdist.conf',
     content => "${action}\n",
     order   => '50',
   }
 }
+

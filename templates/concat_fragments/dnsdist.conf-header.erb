@@ -1,0 +1,30 @@
+# Managed by Puppet
+<% if @webserver_enabled -%>
+# API and Console configuration
+webserver('<%= @webserver %>', '<%= @webserver_pass %>')
+<% end -%>
+<% if @console_enabled -%>
+controlSocket('<%= @control_socket %>')
+setKey("<%= @console_key %>")
+<% end -%>
+<% @listen_addresses.each do |listen_address|
+  -%>addLocal('<%= listen_address %>:<%= @listen_port %>')
+<% end -%>
+<% if @tls_enabled -%>
+<% @listen_addresses.each do |listen_address|
+  -%>addTLSLocal('<%= listen_address %>:<%= @tls_port %>', '<%= @tls_cert  %>', '<%= @tls_key %>' )
+<% end -%>
+<% end -%>
+<% if @doh_enabled -%>
+<% @listen_addresses.each do |listen_address|
+  -%>addDOHLocal('<%= listen_address %>', '<%= @doh_cert  %>', '<%= @doh_key %>' )
+<% end -%>
+<% end -%>
+<% if @cache_enabled -%>
+pc = newPacketCache(<%= @cache_size %>, 86400, 0, 60, 60)
+getPool(""):setCache(pc)
+<% end -%>
+<% if @metrics_enabled -%>
+carbonServer("<%= @metrics_host %>")
+<% end -%>
+

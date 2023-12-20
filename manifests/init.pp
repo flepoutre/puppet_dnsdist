@@ -9,10 +9,26 @@
 #   0.1   Initial release
 #
 # Parameters:
-#   $webserver = '0.0.0.0:80',
-#   $webserver_pass = 'geheim'
-#   $control_socket = '127.0.0.1'
-#   $listen_addresess = '0.0.0.0'
+#   @param version
+#   @param webserver_enabled
+#   @param webserver = '0.0.0.0:80'
+#   @param webserver_pass = 'geheim'
+#   @param console_enabled
+#   @param control_socket = '127.0.0.1'
+#   @param console_key
+#   @param listen_addresses = '0.0.0.0'
+#   @param listen_port
+#   @param tls_enabled
+#   @param tls_port
+#   @param tls_key
+#   @param tls_cert
+#   @param doh_enabled
+#   @param doh_key
+#   @param doh_cert
+#   @param cache_enabled
+#   @param cache_size
+#   @param metrics_enabled
+#   @param metrics_host
 #
 # Requires:
 #   concat
@@ -22,61 +38,62 @@
 #
 #   class { 'dnsdist':
 #    webserver        => '192.168.1.1:80',
-#    listen_addresess => [ '192.168.1.1' ];
+#    listen_addresses => [ '192.168.1.1' ];
 #  }
 #
 class dnsdist (
-  $version          = $dnsdist::params::version,
-  $webserver        = $dnsdist::params::webserver,
-  $webserver_pass   = $dnsdist::params::webserver_pass,
-  $webserver_acl    = "127.0.0.1",
-  $api_key          = $dnsdist::params::api_key,
-  $control_socket   = $dnsdist::params::control_socket,
-  $control_socket_key = $dnsdist::params::control_socket_key,
-  $listen_addresess = $dnsdist::params::listen_addresess,
-  $cache_enabled    = $dnsdist::params::cache_enabled,
-  $cache_size       = $dnsdist::params::cache_size,
-  $metrics_enabled  = $dnsdist::params::metrics_enabled,
-  $metrics_host     = $dnsdist::params::metrics_host,
-  $os               = $dnsdist::params::os,
-  $use_upstream_package_source = $dnsdist::params::use_upstream_package_source,
-  ) inherits dnsdist::params
-{
+  String $version,
+  Boolean $webserver_enabled,
+  String $webserver,
+  String $webserver_pass,
+  Boolean $console_enabled,
+  String $control_socket,
+  String $console_key,
+  Array $listen_addresses,
+  Integer $listen_port,
+  Boolean $tls_enabled,
+  Integer $tls_port,
+  String $tls_key,
+  String $tls_cert,
+  Boolean $doh_enabled,
+  String $doh_key,
+  String $doh_cert,
+  Boolean $cache_enabled,
+  Integer $cache_size,
+  Boolean $metrics_enabled,
+  String $metrics_host,
+) {
+  apt::pin { 'dnsdist':
+    origin   => 'repo.powerdns.com',
+    priority => '600',
+  }
 
-  if ($use_upstream_package_source) {
-
-    apt::pin { 'dnsdist':
-      origin   => 'repo.powerdns.com',
-      priority => '600',
-    }
-
-    apt::key { 'powerdns':
-      ensure => present,
+  apt::source { 'repo.powerdns.com':
+    location     => 'http://repo.powerdns.com/ubuntu',
+    repos        => 'main',
+    release      => join([$facts['os']['distro']['codename'], '-dnsdist-', $version], ''),
+    architecture => 'amd64',
+    key          => {
       id     => '9FAAA5577E8FCF62093D036C1B0C6205FD380FBB',
-      source => 'https://repo.powerdns.com/FD380FBB-pub.asc',
-      server => 'keyserver.ubuntu.com'
-    }
-
-    apt::source { 'repo.powerdns.com':
-      ensure       => present,
-      location     => "http://repo.powerdns.com/${os}",
-      repos        => 'main',
-      release      => "${::lsbdistcodename}-dnsdist-${version}",
-      architecture => 'amd64',
-      require      => [Apt::Key['powerdns'], Apt::Pin['dnsdist']],
-    }
-
-    Apt::Source['repo.powerdns.com'] ~> Class['apt::update'] -> Package['dnsdist']
+      server => 'keyserver.ubuntu.com',
+    },
+    require      => [Apt::Pin['dnsdist']];
   }
 
   package { 'dnsdist':
     ensure  => present,
-    provider => 'apt',
+    require => [Apt::Source['repo.powerdns.com']];
+  }
+
+  $_group = if versioncmp($version, '1.4') == 1 {
+    '_dnsdist'
+  } else {
+    'root'
   }
 
   concat { '/etc/dnsdist/dnsdist.conf' :
     owner   => 'root',
-    group   => 'root',
+    group   => $_group,
     mode    => '0644',
     notify  => Service['dnsdist'],
     require => [Package['dnsdist']],
@@ -84,20 +101,20 @@ class dnsdist (
 
   concat::fragment { 'global-header':
     target  => '/etc/dnsdist/dnsdist.conf',
-    content => template('dnsdist/dnsdist.conf-header.erb'),
-    order   => '10';
+    content => template('dnsdist/concat_fragments/dnsdist.conf-header.erb'),
+    order   => '10',
   }
 
   concat::fragment { 'acl-header':
     target  => '/etc/dnsdist/dnsdist.conf',
     content => 'setACL({',
-    order   => '40';
+    order   => '40',
   }
 
   concat::fragment { 'acl-footer':
     target  => '/etc/dnsdist/dnsdist.conf',
     content => "})\n",
-    order   => '49';
+    order   => '49',
   }
 
   service { 'dnsdist':
@@ -107,4 +124,21 @@ class dnsdist (
     hasrestart => true,
     require    => [Concat['/etc/dnsdist/dnsdist.conf']],
   }
+
+  $dnsdist_acl = lookup('dnsdist::acl', Hash, 'deep', {})
+  $dnsdist_acl_defaults = {}
+  create_resources(dnsdist::acl, $dnsdist_acl, $dnsdist_acl_defaults)
+
+  $dnsdist_newserver = lookup('dnsdist::newserver', Hash, 'deep', {})
+  $dnsdist_newserver_defaults = {}
+  create_resources(dnsdist::newserver, $dnsdist_newserver, $dnsdist_newserver_defaults)
+
+  $dnsdist_addaction = lookup('dnsdist::addaction', Hash, 'deep', {})
+  $dnsdist_addaction_defaults = {}
+  create_resources(dnsdist::addaction, $dnsdist_addaction, $dnsdist_addaction_defaults)
+
+  $dnsdist_addpoolrule = lookup('dnsdist::addpoolrule', Hash, 'deep', {})
+  $dnsdist_addpoolrule_defaults = {}
+  create_resources(dnsdist::addpoolrule, $dnsdist_addpoolrule, $dnsdist_addpoolrule_defaults)
 }
+

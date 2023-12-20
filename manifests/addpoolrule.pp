@@ -9,8 +9,9 @@
 #   0.1   Initial release
 #
 # Parameters:
-#   $rules
-#   $pool
+#   @param rules
+#   @param pool
+#
 # Requires:
 #
 # Sample Usage:
@@ -21,10 +22,14 @@
 #       pool  => 'local';
 #   }
 #
-define dnsdist::addpoolrule ($rules, $pool) {
+define dnsdist::addpoolrule (
+  Optional[Array] $rules = undef,
+  Optional[String] $pool = undef,
+) {
   concat::fragment { "addpoolrule-${title}-${pool}":
     target  => '/etc/dnsdist/dnsdist.conf',
-    content => template('dnsdist/addPoolRule.erb'),
+    content => template('dnsdist/concat_fragments/addPoolRule.erb'),
     order   => '30',
   }
 }
+

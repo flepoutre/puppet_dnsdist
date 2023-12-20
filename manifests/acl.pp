@@ -9,7 +9,7 @@
 #   0.1   Initial release
 #
 # Parameters:
-#   $networkadres = $title
+#   @param networkaddress
 #
 # Requires:
 #
@@ -19,10 +19,13 @@
 #     '192.168.1.0/24']:
 #   }
 #
-define dnsdist::acl ($networkadres = $title) {
+define dnsdist::acl (
+  String $networkaddress = $title,
+) {
   concat::fragment { "acl-${title}":
     target  => '/etc/dnsdist/dnsdist.conf',
-    content => template('dnsdist/ACL.erb'),
+    content => template('dnsdist/concat_fragments/acl.erb'),
     order   => '45',
   }
 }
+

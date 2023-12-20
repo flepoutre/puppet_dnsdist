@@ -1,0 +1,22 @@
+---
+dnsdist::version: 14
+dnsdist::webserver_enabled: false
+dnsdist::webserver: 0.0.0.0:80
+dnsdist::webserver_pass: changeme
+dnsdist::control_socket: 127.0.0.1
+dnsdist::console_enabled: false
+dnsdist::console_key: null
+dnsdist::listen_addresses: 0.0.0.0
+dnsdist::listen_port: 53
+dnsdist::tls_enabled: false
+dnsdist::tls_port: 853
+dnsdist::tls_key: null
+dnsdist::tls_cert: null
+dnsdist::doh_enabled: false
+dnsdist::doh_key: null
+dnsdist::doh_cert: null
+dnsdist::cache_enabled: false
+dnsdist::cache_size: 10000
+dnsdist::metrics_enabled: false
+dnsdist::metrics_host: 127.0.0.1
+
